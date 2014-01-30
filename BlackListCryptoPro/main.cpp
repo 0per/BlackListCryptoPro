@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define _WINSOCKAPI_ // Не включать в windows.h winsock.h иначе глючит gSOAP
+#define _WINSOCKAPI_ // РќРµ РІРєР»СЋС‡Р°С‚СЊ РІ windows.h winsock.h РёРЅР°С‡Рµ РіР»СЋС‡РёС‚ gSOAP
 #include <windows.h>
 #include "soapH.h"
 SOAP_NMAC struct Namespace namespaces[] =
@@ -21,14 +21,14 @@ SOAP_NMAC struct Namespace namespaces[] =
 };
 
 #include <cryptuiapi.h>
-#include <WinCryptEx.h> // wincrypt.h - включается внутри
+#include <WinCryptEx.h> // wincrypt.h - РІРєР»СЋС‡Р°РµС‚СЃСЏ РІРЅСѓС‚СЂРё
 #include <cades.h>
 
 #pragma comment (lib, "crypt32.lib")
 #pragma comment (lib, "cryptui.lib")
 
-#define TIME_UPDATE 60000 * 30 //в минутах 30 мин
-#define TIME_WITE_REQUEST 60000 //в минутах 1 мин
+#define TIME_UPDATE 60000 * 30 //РІ РјРёРЅСѓС‚Р°С… 30 РјРёРЅ
+#define TIME_WITE_REQUEST 60000 //РІ РјРёРЅСѓС‚Р°С… 1 РјРёРЅ
 
 
 DWORD ReportFailure()
@@ -102,21 +102,21 @@ void HandleError(char *s)
 
 int main(int argc, char* argv[])
 {
-	// Определяем хранилище и структуру для сертификата
+	// РћРїСЂРµРґРµР»СЏРµРј С…СЂР°РЅРёР»РёС‰Рµ Рё СЃС‚СЂСѓРєС‚СѓСЂСѓ РґР»СЏ СЃРµСЂС‚РёС„РёРєР°С‚Р°
 	HCERTSTORE hCertStore = NULL;        
 	PCCERT_CONTEXT  pCert = NULL; 
 
-	// Открываем хранилище сертификатов
+	// РћС‚РєСЂС‹РІР°РµРј С…СЂР°РЅРёР»РёС‰Рµ СЃРµСЂС‚РёС„РёРєР°С‚РѕРІ
 	if (!(hCertStore = CertOpenSystemStore(NULL, "MY")))
 	{
 		HandleError("The store was not opened.");
 	}
-	// Выбираем сертификат
+	// Р’С‹Р±РёСЂР°РµРј СЃРµСЂС‚РёС„РёРєР°С‚
 	if(!(pCert = CryptUIDlgSelectCertificateFromStore( hCertStore, NULL, NULL, NULL, CRYPTUI_SELECT_LOCATION_COLUMN, 0, NULL)))
 	{
 		HandleError("Select UI failed." );
 	}
-	// Создаем, "зерошим" и инициируем поля структуры для создания отсоедененной подписи PKCS7
+	// РЎРѕР·РґР°РµРј, "Р·РµСЂРѕС€РёРј" Рё РёРЅРёС†РёРёСЂСѓРµРј РїРѕР»СЏ СЃС‚СЂСѓРєС‚СѓСЂС‹ РґР»СЏ СЃРѕР·РґР°РЅРёСЏ РѕС‚СЃРѕРµРґРµРЅРµРЅРЅРѕР№ РїРѕРґРїРёСЃРё PKCS7
 	CRYPT_SIGN_MESSAGE_PARA SignPara;
 	ZeroMemory(&SignPara, sizeof(SignPara));
 	SignPara.cbSize = sizeof(SignPara);
@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 	SignPara.cMsgCert = 1;
 	SignPara.rgpMsgCert = &pCert;
 	
-	// Следующие структуры нам нужны для выполнения запросов gSOAP
+	// РЎР»РµРґСѓСЋС‰РёРµ СЃС‚СЂСѓРєС‚СѓСЂС‹ РЅР°Рј РЅСѓР¶РЅС‹ РґР»СЏ РІС‹РїРѕР»РЅРµРЅРёСЏ Р·Р°РїСЂРѕСЃРѕРІ gSOAP
 	_ns1__getLastDumpDate getLastDumpDate;
 	_ns1__getLastDumpDateResponse getLastDumpDateResponse;
 
@@ -140,15 +140,15 @@ int main(int argc, char* argv[])
 	soap_init(&soap); 
 	soap_set_namespaces(&soap, namespaces); 
 
-	// Сам XML запрос
+	// РЎР°Рј XML Р·Р°РїСЂРѕСЃ
 	string request;
-	string operatorName = "Открытое Акционерное Общество Рога и Копыта", inn = "1234567890", ogrn = "1234567890123", email= "mail@domain.com";
+	string operatorName = "РћС‚РєСЂС‹С‚РѕРµ РђРєС†РёРѕРЅРµСЂРЅРѕРµ РћР±С‰РµСЃС‚РІРѕ Р РѕРіР° Рё РљРѕРїС‹С‚Р°", inn = "1234567890", ogrn = "1234567890123", email= "mail@domain.com";
 
 	time_t last_time = time(0); 
 
 	for(;;)
 	{
-		char buff[64]; // размер явно завышен, но пусть будет
+		char buff[64]; // СЂР°Р·РјРµСЂ СЏРІРЅРѕ Р·Р°РІС‹С€РµРЅ, РЅРѕ РїСѓСЃС‚СЊ Р±СѓРґРµС‚
 		
 		if(0!=soap_call___ns1__getLastDumpDate(&soap,NULL,NULL,&getLastDumpDate, &getLastDumpDateResponse))
 		{
@@ -190,14 +190,14 @@ int main(int argc, char* argv[])
 				const BYTE* DataArray[] = { (BYTE*)request.data() };
 				DWORD SizeArray[] = { strlen(request.data()) };
 				DWORD count = 0;
-				// Определяем примерный размер будующей подписи
+				// РћРїСЂРµРґРµР»СЏРµРј РїСЂРёРјРµСЂРЅС‹Р№ СЂР°Р·РјРµСЂ Р±СѓРґСѓСЋС‰РµР№ РїРѕРґРїРёСЃРё
 				if(!CryptSignMessage(&SignPara,TRUE,1,DataArray,SizeArray,NULL,&count))
 				{
 					HandleError("Signature unsuccessful phase 1");
 				}
-				// Выделяем под нее память
+				// Р’С‹РґРµР»СЏРµРј РїРѕРґ РЅРµРµ РїР°РјСЏС‚СЊ
 				BYTE* signature = static_cast<BYTE*>(malloc(count));
-				// И подписываем
+				// Р РїРѕРґРїРёСЃС‹РІР°РµРј
 				if(!CryptSignMessage(&SignPara,TRUE,1,DataArray,SizeArray,signature,&count))
 				{
 					HandleError("Signature unsuccessful phase 2");
