@@ -142,7 +142,8 @@ int main(int argc, char* argv[])
 
 	// Сам XML запрос
 	string request;
-	string operatorName = "Открытое Акционерное Общество Рога и Копыта", inn = "1234567890", ogrn = "1234567890123", email= "mail@domain.com";
+	string operatorName = "Open Joint Stock Company Horns and Hoofs",
+			inn = "1234567890", ogrn = "1234567890123", email= "mail@domain.com";
 
 	time_t last_time = time(0); 
 
