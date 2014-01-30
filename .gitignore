@@ -1,8 +1,11 @@
 *.exe
 *.obj
+# User-specific files
+*.suo
+*.user
+*.sln.docstates
 *.sdf
 *.opensdf
-*.suo
 
 Release/
 Debug/
