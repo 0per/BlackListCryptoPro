@@ -27,6 +27,17 @@ SOAP_NMAC struct Namespace namespaces[] =
 #pragma comment (lib, "crypt32.lib")
 #pragma comment (lib, "cryptui.lib")
 
+// Библиотека json используется для чтения конфигурации
+#include <json/json.h>
+#include <algorithm>
+
+#ifdef _DEBUG
+#pragma comment(lib, "../Debug/lib_json.lib")
+#else
+#pragma comment(lib, "../Release/lib_json.lib")
+#endif
+
+
 #define TIME_UPDATE 60000 * 30 //в минутах 30 мин
 #define TIME_WITE_REQUEST 60000 //в минутах 1 мин
 
@@ -100,6 +111,27 @@ void HandleError(char *s)
 	exit(err);
 }
 
+// переделать под stream
+static std::string readInputTestFile( const char *path )
+{
+   FILE *file;
+   fopen_s(&file, path, "rb" );
+   if ( !file )
+      return std::string("");
+   fseek( file, 0, SEEK_END );
+   long size = ftell( file );
+   fseek( file, 0, SEEK_SET );
+   std::string text;
+   char *buffer = new char[size+1];
+   buffer[size] = 0;
+   if ( fread( buffer, 1, size, file ) == (unsigned long)size )
+      text = buffer;
+   fclose( file );
+   delete[] buffer;
+   return text;
+}
+
+
 int main(int argc, char* argv[])
 {
 	// Определяем хранилище и структуру для сертификата
@@ -127,6 +159,8 @@ int main(int argc, char* argv[])
 	SignPara.rgpMsgCert = &pCert;
 	
 	// Следующие структуры нам нужны для выполнения запросов gSOAP
+	struct soap soap;
+
 	_ns1__getLastDumpDate getLastDumpDate;
 	_ns1__getLastDumpDateResponse getLastDumpDateResponse;
 
@@ -136,15 +170,30 @@ int main(int argc, char* argv[])
 	_ns1__getResult getResult;
 	_ns1__getResultResponse getResultResponse;
 
-	struct soap soap;
+	// Вообщето все работает и так, но положено инициировать на всякий случай
 	soap_init(&soap); 
 	soap_set_namespaces(&soap, namespaces); 
 
 	// Сам XML запрос
 	string request;
-	string operatorName = "Open Joint Stock Company Horns and Hoofs",
-			inn = "1234567890", ogrn = "1234567890123", email= "mail@domain.com";
 
+	Json::Value root;   // will contains the root value after parsing.
+	Json::Reader reader;
+
+	string input = readInputTestFile( "config.json" );
+	if ( input.empty() )
+	{
+		cout<< "Failed to read input or empty input"<<endl;
+		return 3;
+	}
+   
+	bool parsingSuccessful = reader.parse( input, root );
+	if ( !parsingSuccessful )
+	{
+		// report to the user the failure and their locations in the document.
+		cout  << "Failed to parse configuration\n" << reader.getFormatedErrorMessages();
+	}
+	
 	time_t last_time = time(0); 
 
 	for(;;)
@@ -175,19 +224,26 @@ int main(int argc, char* argv[])
 				request += buff;
 				request += "</requestTime>\n";
 				request += "<operatorName>";
-				request += "<![CDATA[" + operatorName + "]]>";
+				request += "<![CDATA[" + root["operatorName"].asString() + "]]>";
 				request += "</operatorName>\n";
 				request += "<inn>";
-				request += inn;
+				request += root["inn"].asString();
 				request += "</inn>\n";
 				request += "<ogrn>";
-				request += ogrn;
+				request += root["ogrn"].asString();
 				request += "</ogrn>\n";
 				request += "<email>";
-				request += email;
+				request += root["email"].asString();
 				request += "</email>\n";
 				request += "</request>";
 				
+				#ifdef _DEBUG
+				ofstream myfile;
+				myfile.open("request.xml",ios::out);
+				myfile.write(request.data(),request.size());
+				myfile.close();
+				#endif
+
 				const BYTE* DataArray[] = { (BYTE*)request.data() };
 				DWORD SizeArray[] = { strlen(request.data()) };
 				DWORD count = 0;
@@ -217,13 +273,14 @@ int main(int argc, char* argv[])
 					do {
 						Sleep(TIME_WITE_REQUEST);
 						soap_call___ns1__getResult(&soap,NULL,NULL,&getResult,&getResultResponse);
+						// Разобраться в какой кодировке возвращает коммент
 						/*try{
 							if(NULL!=getResultResponse.resultComment) cout << getResultResponse.resultComment << endl;
 						} catch(exception& e) {
 							cerr << e.what();
 						}*/
 					} while(!getResultResponse.result);
-
+					// Подпись пока не проверяем
 					time_t now = time(0);
 					localtime_s(&ltm,&now);
 					strftime(buff,sizeof(buff),"reestr%d_%m_%H-%M-%S.zip",&ltm);
